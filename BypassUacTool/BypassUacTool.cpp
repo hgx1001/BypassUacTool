@@ -145,7 +145,7 @@ VOID Help()
 {
 	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(handle, 2);
-	printf("By ExpLife\r\n");
+	printf("fixed By mekolr. \tBy ExpLife\r\n");
 	SetConsoleTextAttribute(handle, 3);
 	printf("Usage: XXX.exe TheFullPathOfTarget Number\r\n");
 	SetConsoleTextAttribute(handle, 4);
