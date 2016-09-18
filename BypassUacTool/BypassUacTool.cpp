@@ -171,7 +171,7 @@ int main(int argc , char * argv[])
 		return 0;
 	}
 
-	DWORD dwIndex = StrToInt(argv[2]);
+	DWORD dwIndex = 0;// StrToInt(argv[2]);
 	if (dwIndex != 0 && dwIndex != 1)
 	{
 		Help();
